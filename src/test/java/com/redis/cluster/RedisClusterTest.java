@@ -103,7 +103,7 @@ public class RedisClusterTest {
         assertSame(DataType.SET, redisTemplate.type(cacheKey));
         assertSame(10L, setOps.size(cacheKey));
 
-        log.info("##### opsList #####");
+        log.info("##### opsSet #####");
         log.info("{}", setOps.members(cacheKey));
 
         assertEquals(true, setOps.isMember(cacheKey, "5"));
