@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %-5level %d{HH:mm:ss} %logger{15}.%method:%line - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.redis.cluster" level="debug" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+</configuration>
