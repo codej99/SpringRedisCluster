@@ -12,12 +12,12 @@ import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.core.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
@@ -163,5 +163,32 @@ public class RedisClusterTest {
         log.info("##### opsHyperLogLog #####");
         log.info("count : {}", hyperLogLogOps.size(cacheKey));
         redisTemplate.delete(cacheKey);
+    }
+
+    @Test
+    public void commonCommand() {
+        ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
+        valueOps.set("key1", "key1value");
+        valueOps.set("key2", "key2value");
+        // Key 타입 조회.
+        assertEquals(DataType.STRING, redisTemplate.type("key1"));
+        // 존재하는 Key의 개수를 반환.
+        assertSame(2L, redisTemplate.countExistingKeys(Arrays.asList("key1", "key2", "key3")));
+        // Key가 존재하는지 확인
+        assertTrue(redisTemplate.hasKey("key1"));
+        // Key 만료 날짜 세팅
+        assertTrue(redisTemplate.expireAt("key1", Date.from(LocalDateTime.now().plusDays(1L).atZone(ZoneId.systemDefault()).toInstant())));
+        // Key 만료 시간 세팅
+        assertTrue(redisTemplate.expire("key1", 60, TimeUnit.SECONDS));
+        // Key 만료 시간 조회
+        assertThat(redisTemplate.getExpire("key1"), greaterThan(0L));
+        // Key 만료 시간 해제
+        assertTrue(redisTemplate.persist("key1"));
+        // Key 만료시간이 세팅 안되어있는경우 -1 반환
+        assertSame(-1L, redisTemplate.getExpire("key1"));
+        // Key 삭제
+        assertTrue(redisTemplate.delete("key1"));
+        // Key 일괄 삭제
+        assertThat(redisTemplate.delete(Arrays.asList("key1", "key2", "key3")), greaterThan(0L));
     }
 }
