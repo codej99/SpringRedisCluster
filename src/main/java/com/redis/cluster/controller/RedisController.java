@@ -1,45 +1,47 @@
 package com.redis.cluster.controller;
 
+import com.redis.cluster.common.CacheKey;
 import com.redis.cluster.entity.User;
 import com.redis.cluster.repo.UserJpaRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @RequiredArgsConstructor
 @RequestMapping("/redis")
 @RestController
 public class RedisController {
 
-    private final RedisTemplate<String, String> redisTemplate;
     private final UserJpaRepo userJpaRepo;
-    private final PasswordEncoder passwordEncoder;
+    private static final String UID = "strongdaddy@naver.com";
 
-    @GetMapping("/ops/value")
-    public List<String> redisClusterTest() {
-        ValueOperations<String, String> valueOps = redisTemplate.opsForValue();
-        Collection<String> keys = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            keys.add("valueOps_" + i);
-            valueOps.set("valueOps_" + i, String.valueOf(i));
-        }
-        return valueOps.multiGet(keys);
+    @Cacheable(value = CacheKey.USER_SINGLE, key = "#uid", unless = "#result == null")
+    @GetMapping("/user/{uid}")
+    public User findOne(@PathVariable String uid) {
+        return userJpaRepo.findByUid(uid).orElse(null);
     }
 
-    @PostMapping("/post/user")
-    public void redisClusterPostUser() {
+    @PostMapping("/user")
+    @ResponseBody
+    public User postUser() {
         userJpaRepo.save(User.builder()
-                .uid("strongdaddy@naver.com")
-                .password(passwordEncoder.encode("1234"))
+                .uid(UID)
+                .password("1234")
                 .name("strongdaddy")
                 .roles(Collections.singletonList("ROLE_USER"))
                 .build());
+
+        return userJpaRepo.findByUid(UID).orElse(null);
+    }
+
+    @CachePut(value = CacheKey.USER_SINGLE, key = "#user.uid")
+    @PutMapping("/user")
+    @ResponseBody
+    public User putUser(@RequestBody User user) {
+        userJpaRepo.save(user);
+        return userJpaRepo.findByUid(UID).orElse(null);
     }
 }
