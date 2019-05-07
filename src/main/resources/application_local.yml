@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+spring:
+  profiles: local
+  datasource:
+    url: jdbc:h2:tcp://localhost:9000/mem:test;MVCC=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties.hibernate.hbm2ddl.auto: create-drop
+    showSql: true
