@@ -1,6 +1,11 @@
 server:
   port: 8081
 
+logging:
+  level:
+    root: warn
+    com.rest.api: debug
+
 spring:
   datasource:
     url: jdbc:h2:tcp://localhost/~/test
@@ -8,8 +13,11 @@ spring:
     username: sa
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
-    properties.hibernate.hbm2ddl.auto: update
+    properties.hibernate:
+      hbm2ddl.auto: update
+      format_sql: true
     showSql: true
+    generate-ddl: true
   redis:
     cluster:
       nodes:
@@ -19,4 +27,5 @@ spring:
         - 15.164.98.87:6400
         - 15.164.98.87:6401
         - 15.164.98.87:6402
-    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      max-redirects: 3
+    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
