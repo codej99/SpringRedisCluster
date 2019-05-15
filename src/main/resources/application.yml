@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    root: warn
+    root: info
     com.rest.api: debug
 
 spring:
@@ -28,4 +28,4 @@ spring:
         - 15.164.98.87:6401
         - 15.164.98.87:6402
       max-redirects: 3
-    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
