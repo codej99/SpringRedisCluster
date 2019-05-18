@@ -1,5 +1,7 @@
 package com.redis.cluster;
 
+import com.redis.cluster.entity.redis.Student;
+import com.redis.cluster.repo.redis.StudentRedisRepo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -28,6 +30,9 @@ public class RedisClusterTest {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+
+    @Autowired
+    private StudentRedisRepo redisRepo;
 
     /**
      * 문자 데이터 구조 처리
@@ -190,5 +195,32 @@ public class RedisClusterTest {
         assertTrue(redisTemplate.delete("key1"));
         // Key 일괄 삭제
         assertThat(redisTemplate.delete(Arrays.asList("key1", "key2", "key3")), greaterThan(0L));
+    }
+
+    @Test
+    public void redisHash_Insert() {
+        long studentId = 1L;
+        String name = "행복하라";
+        Student student = Student.builder().studentId(studentId).name(name).build();
+        redisRepo.save(student);
+
+        Student cachedStudent = redisRepo.findById(studentId).orElse(null);
+        assertNotNull(cachedStudent);
+        assertEquals(1L, cachedStudent.getStudentId());
+        assertEquals(name, cachedStudent.getName());
+    }
+
+    @Test
+    public void redisHash_Update() {
+        long studentId = 1L;
+        String name = "행복하라";
+        Student student = Student.builder().studentId(studentId).name(name).build();
+        student.update("정직하라");
+        redisRepo.save(student);
+
+        Student cachedStudent = redisRepo.findById(studentId).orElse(null);
+        assertNotNull(cachedStudent);
+        assertEquals(1L, cachedStudent.getStudentId());
+        assertEquals("정직하라", cachedStudent.getName());
     }
 }
