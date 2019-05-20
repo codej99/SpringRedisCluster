@@ -5,7 +5,6 @@ import com.redis.cluster.repo.UserJpaRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -20,7 +19,6 @@ public class RedisController {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final UserJpaRepo userJpaRepo;
-    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/ops/value")
     public List<String> redisClusterTest() {
@@ -37,7 +35,7 @@ public class RedisController {
     public void redisClusterPostUser() {
         userJpaRepo.save(User.builder()
                 .uid("strongdaddy@naver.com")
-                .password(passwordEncoder.encode("1234"))
+                .password("1234")
                 .name("strongdaddy")
                 .roles(Collections.singletonList("ROLE_USER"))
                 .build());
