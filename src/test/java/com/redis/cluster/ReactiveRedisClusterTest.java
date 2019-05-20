@@ -1,10 +1,7 @@
 package com.redis.cluster;
 
-import com.redis.cluster.repo.redis.StudentRedisRepo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.geo.Point;
@@ -20,17 +17,11 @@ import java.util.*;
 @SpringBootTest
 public class ReactiveRedisClusterTest {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
-
-
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
-
-    @Autowired
-    private StudentRedisRepo redisRepo;
 
     /**
      * 문자 데이터 구조 처리
@@ -40,7 +31,7 @@ public class ReactiveRedisClusterTest {
         ReactiveValueOperations<String, String> valueOps = reactiveRedisTemplate.opsForValue();
         Set<String> cacheKeys = new HashSet<>();
         Map<String, String> setDatas = new HashMap<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             String key = "value_" + i;
             cacheKeys.add(key);
             setDatas.put(key, String.valueOf(i));
@@ -54,7 +45,7 @@ public class ReactiveRedisClusterTest {
 
         Mono<List<String>> values = valueOps.multiGet(cacheKeys);
         StepVerifier.create(values)
-                .expectNextMatches(x -> x.size() == 10).verifyComplete();
+                .expectNextMatches(x -> x.size() == 100).verifyComplete();
     }
 
     /**
@@ -116,8 +107,8 @@ public class ReactiveRedisClusterTest {
             StepVerifier.create(setOps.add(cacheKey, String.valueOf(i))).expectNext(1L).verifyComplete();
 
         StepVerifier.create(reactiveRedisTemplate.type(cacheKey)).expectNext(DataType.SET).verifyComplete();
-        StepVerifier.create(setOps.size(cacheKey)).expectNext(10L);
-        StepVerifier.create(setOps.isMember(cacheKey, "5")).expectNext(true);
+        StepVerifier.create(setOps.size(cacheKey)).expectNext(10L).verifyComplete();
+        StepVerifier.create(setOps.isMember(cacheKey, "5")).expectNext(true).verifyComplete();
     }
 
     /**
@@ -144,24 +135,25 @@ public class ReactiveRedisClusterTest {
      * Geo 데이터 구조 처리 - 좌표 정보 처리, 타입은 zset으로 저장.
      */
     @Test
-    public void opsGeo() throws Exception {
-        GeoOperations<String, String> geoOpsSync = redisTemplate.opsForGeo();
+    public void opsGeo() {
         ReactiveGeoOperations<String, String> geoOps = reactiveRedisTemplate.opsForGeo();
         String[] cities = {"서울", "부산"};
-        String[] gu = {"강남구", "서초구", "관악구", "동작구", "마포구", "사하구", "해운대구", "영도구", "동래구", "수영구"};
+        String[][] gu = {{"강남구", "서초구", "관악구", "동작구", "마포구"}, {"사하구", "해운대구", "영도구", "동래구", "수영구"}};
         String cacheKey = "valueGeo";
 
         // previous key delete - sync
         redisTemplate.delete(cacheKey);
 
+        Map<String, Point> memberCoordiateMap = new HashMap<>();
         for (int x = 0; x < cities.length; x++) {
-            for (int y = 0; y < gu.length / 2; y++) {
-                geoOpsSync.add(cacheKey, new Point(x, y), gu[x * y]);
+            for (int y = 0; y < 5; y++) {
+                memberCoordiateMap.put(gu[x][y], new Point(x, y));
             }
         }
         // async
+        StepVerifier.create(geoOps.add(cacheKey, memberCoordiateMap)).expectNext(10L).verifyComplete();
         StepVerifier.create(geoOps.distance(cacheKey, "강남구", "동작구")).expectNextMatches(x -> x.getValue() == 333678.8605).verifyComplete();
-        StepVerifier.create(geoOps.position(cacheKey, "동작구")).expectNextMatches(x -> x.getX() == 0.9999999403953552 && x.getY() == 3.0000009121501066).verifyComplete();
+        StepVerifier.create(geoOps.position(cacheKey, "동작구")).expectNextMatches(x -> x.getX() == 0.000003 && x.getY() == 3.000001).verifyComplete();
     }
 
     /**
