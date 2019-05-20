@@ -31,21 +31,21 @@ public class ReactiveRedisClusterTest {
         ReactiveValueOperations<String, String> valueOps = reactiveRedisTemplate.opsForValue();
         Set<String> cacheKeys = new HashSet<>();
         Map<String, String> setDatas = new HashMap<>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             String key = "value_" + i;
             cacheKeys.add(key);
             setDatas.put(key, String.valueOf(i));
         }
-        // previous key delete - sync
+        // previous key delete - sync process
         redisTemplate.delete(cacheKeys);
 
-        // async
+        // async process
         Mono<Boolean> results = valueOps.multiSet(setDatas);
         StepVerifier.create(results).expectNext(true).verifyComplete();
 
         Mono<List<String>> values = valueOps.multiGet(cacheKeys);
         StepVerifier.create(values)
-                .expectNextMatches(x -> x.size() == 100).verifyComplete();
+                .expectNextMatches(x -> x.size() == 10).verifyComplete();
     }
 
     /**
@@ -56,10 +56,10 @@ public class ReactiveRedisClusterTest {
         ReactiveListOperations<String, String> listOps = reactiveRedisTemplate.opsForList();
         String cacheKey = "valueList";
 
-        // previous key delete
+        // previous key delete - sync process
         redisTemplate.delete(cacheKey);
 
-        // async
+        // async process
         Mono<Long> results = listOps.leftPushAll(cacheKey, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
         StepVerifier.create(results).expectNext(10L).verifyComplete();
         StepVerifier.create(reactiveRedisTemplate.type(cacheKey)).expectNext(DataType.LIST).verifyComplete();
@@ -83,7 +83,7 @@ public class ReactiveRedisClusterTest {
         // previous key delete - sync
         redisTemplate.delete(cacheKey);
 
-        // async
+        // async process
         StepVerifier.create(hashOps.putAll(cacheKey, setDatas)).expectNext(true).verifyComplete();
         StepVerifier.create(reactiveRedisTemplate.type(cacheKey)).expectNext(DataType.HASH).verifyComplete();
         StepVerifier.create(hashOps.size(cacheKey)).expectNext(10L).verifyComplete();
@@ -99,13 +99,11 @@ public class ReactiveRedisClusterTest {
         ReactiveSetOperations<String, String> setOps = reactiveRedisTemplate.opsForSet();
         String cacheKey = "valueSet";
 
-        // previous key delete - sync
+        // previous key delete - sync process
         redisTemplate.delete(cacheKey);
 
-        // async
-        for (int i = 0; i < 10; i++)
-            StepVerifier.create(setOps.add(cacheKey, String.valueOf(i))).expectNext(1L).verifyComplete();
-
+        // async process
+        StepVerifier.create(setOps.add(cacheKey, "0", "1", "2", "3", "4", "5", "6", "7", "8", "9")).expectNext(10L).verifyComplete();
         StepVerifier.create(reactiveRedisTemplate.type(cacheKey)).expectNext(DataType.SET).verifyComplete();
         StepVerifier.create(setOps.size(cacheKey)).expectNext(10L).verifyComplete();
         StepVerifier.create(setOps.isMember(cacheKey, "5")).expectNext(true).verifyComplete();
@@ -119,13 +117,15 @@ public class ReactiveRedisClusterTest {
         ReactiveZSetOperations<String, String> zsetOps = reactiveRedisTemplate.opsForZSet();
         String cacheKey = "valueZSet";
 
-        // previous key delete - sync
+        // previous key delete - sync process
         redisTemplate.delete(cacheKey);
 
-        // async
-        for (int i = 0; i < 10; i++)
-            StepVerifier.create(zsetOps.add(cacheKey, String.valueOf(i), i)).expectNext(true).verifyComplete();
-
+        // async process
+        List<ZSetOperations.TypedTuple<String>> tuples = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            tuples.add(new DefaultTypedTuple<>(String.valueOf(i), (double) i));
+        }
+        StepVerifier.create(zsetOps.addAll(cacheKey, tuples)).expectNext(10L).verifyComplete();
         StepVerifier.create(reactiveRedisTemplate.type(cacheKey)).expectNext(DataType.ZSET).verifyComplete();
         StepVerifier.create(zsetOps.size(cacheKey)).expectNext(10L).verifyComplete();
         StepVerifier.create(zsetOps.reverseRank(cacheKey, "9")).expectNext(0L).verifyComplete();
@@ -139,21 +139,22 @@ public class ReactiveRedisClusterTest {
         ReactiveGeoOperations<String, String> geoOps = reactiveRedisTemplate.opsForGeo();
         String[] cities = {"서울", "부산"};
         String[][] gu = {{"강남구", "서초구", "관악구", "동작구", "마포구"}, {"사하구", "해운대구", "영도구", "동래구", "수영구"}};
+        Point[][] pointGu = {{new Point(10, -10), new Point(11, -20), new Point(13, 10), new Point(14, 30), new Point(15, 40)}, {new Point(-100, 10), new Point(-110, 20), new Point(-130, 80), new Point(-140, 60), new Point(-150, 30)}};
         String cacheKey = "valueGeo";
 
-        // previous key delete - sync
+        // previous key delete - sync process
         redisTemplate.delete(cacheKey);
 
+        // async process
         Map<String, Point> memberCoordiateMap = new HashMap<>();
         for (int x = 0; x < cities.length; x++) {
             for (int y = 0; y < 5; y++) {
-                memberCoordiateMap.put(gu[x][y], new Point(x, y));
+                memberCoordiateMap.put(gu[x][y], pointGu[x][y]);
             }
         }
-        // async
         StepVerifier.create(geoOps.add(cacheKey, memberCoordiateMap)).expectNext(10L).verifyComplete();
-        StepVerifier.create(geoOps.distance(cacheKey, "강남구", "동작구")).expectNextMatches(x -> x.getValue() == 333678.8605).verifyComplete();
-        StepVerifier.create(geoOps.position(cacheKey, "동작구")).expectNextMatches(x -> x.getX() == 0.000003 && x.getY() == 3.000001).verifyComplete();
+        StepVerifier.create(geoOps.distance(cacheKey, "강남구", "동작구")).expectNextMatches(x -> x.getValue() == 4469610.0767).verifyComplete();
+        StepVerifier.create(geoOps.position(cacheKey, "동작구")).expectNextMatches(x -> x.getX() == 14.000001847743988 && x.getY() == 30.000000249977013).verifyComplete();
     }
 
     /**
@@ -164,10 +165,10 @@ public class ReactiveRedisClusterTest {
         ReactiveHyperLogLogOperations<String, String> hyperLogLogOps = reactiveRedisTemplate.opsForHyperLogLog();
         String cacheKey = "valueHyperLogLog";
 
-        // previous key delete - sync
+        // previous key delete - sync process
         redisTemplate.delete(cacheKey);
 
-        // async
+        // async process
         String[] arr = {"1", "2", "2", "3", "4", "5", "5", "5", "5", "6", "7", "7", "7"};
         StepVerifier.create(hyperLogLogOps.add(cacheKey, arr)).expectNext(1L).verifyComplete();
         StepVerifier.create(hyperLogLogOps.size(cacheKey)).expectNext(7L).verifyComplete();
