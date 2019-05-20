@@ -138,20 +138,29 @@ public class RedisClusterTest {
     public void opsGeo() {
         GeoOperations<String, String> geoOps = redisTemplate.opsForGeo();
         String[] cities = {"서울", "부산"};
-        String[] gu = {"강남구", "서초구", "관악구", "동작구", "마포구", "사하구", "해운대구", "영도구", "동래구", "수영구"};
+        String[][] gu = {{"강남구", "서초구", "관악구", "동작구", "마포구"}, {"사하구", "해운대구", "영도구", "동래구", "수영구"}};
+        Point[][] pointGu = {{new Point(10, -10), new Point(11, -20), new Point(13, 10), new Point(14, 30), new Point(15, 40)}, {new Point(-100, 10), new Point(-110, 20), new Point(-130, 80), new Point(-140, 60), new Point(-150, 30)}};
         String cacheKey = "valueGeo";
+
+        // previous key delete
+        redisTemplate.delete(cacheKey);
+
         for (int x = 0; x < cities.length; x++) {
-            for (int y = 0; y < gu.length / 2; y++) {
-                geoOps.add(cacheKey, new Point(x, y), gu[x * y]);
+            for (int y = 0; y < 5; y++) {
+                geoOps.add(cacheKey, pointGu[x][y], gu[x][y]);
             }
         }
+
         log.info("##### opsGeo #####");
         Distance distance = geoOps.distance(cacheKey, "강남구", "동작구");
         assertNotNull(distance);
+        assertEquals(4469610.0767, distance.getValue(), 4);
         log.info("Distance : {}", distance.getValue());
         List<Point> position = geoOps.position(cacheKey, "동작구");
         assertNotNull(position);
         for (Point point : position) {
+            assertEquals(14.000001847743988d, point.getX(), 4);
+            assertEquals(30.000000249977013d, point.getY(), 4);
             log.info("Position : {} x {}", point.getX(), point.getY());
         }
     }
