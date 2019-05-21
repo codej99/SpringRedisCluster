@@ -1,5 +1,6 @@
 package com.redis.cluster;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import reactor.test.StepVerifier;
 
 import java.util.*;
 
+@Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class ReactiveRedisClusterTest {
@@ -30,22 +32,19 @@ public class ReactiveRedisClusterTest {
     public void opsValue() {
         ReactiveValueOperations<String, String> valueOps = reactiveRedisTemplate.opsForValue();
         Set<String> cacheKeys = new HashSet<>();
-        Map<String, String> setDatas = new HashMap<>();
-        for (int i = 0; i < 10; i++) {
+        // async process
+        log.info("Step-1");
+        for (int i = 0; i < 5000; i++) {
             String key = "value_" + i;
             cacheKeys.add(key);
-            setDatas.put(key, String.valueOf(i));
+            valueOps.set(key, String.valueOf(i));
         }
-        // previous key delete - sync process
-        redisTemplate.delete(cacheKeys);
-
-        // async process
-        Mono<Boolean> results = valueOps.multiSet(setDatas);
-        StepVerifier.create(results).expectNext(true).verifyComplete();
-
+        log.info("Step-2");
         Mono<List<String>> values = valueOps.multiGet(cacheKeys);
+        log.info("Step-3");
         StepVerifier.create(values)
-                .expectNextMatches(x -> x.size() == 10).verifyComplete();
+                .expectNextMatches(x -> x.size() == 5000).verifyComplete();
+        log.info("Step-4");
     }
 
     /**
