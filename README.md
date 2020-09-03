@@ -1,7 +1,7 @@
 ![Java_8](https://img.shields.io/badge/java-v1.8-red?logo=java)
 ![Spring_Boot](https://img.shields.io/badge/Spring_Boot-2.1.4-green.svg?logo=spring)
 ![Spring_Data_Redis](https://img.shields.io/badge/Spring_Data_Redis-2.1.4-green.svg?logo=redis)
-![GitHub stars](https://img.shields.io/github/stars/codej99/SpringOauth2AuthorizationServer?style=social)
+![GitHub stars](https://img.shields.io/github/stars/codej99/SpringRedisCluster?style=social)
 
 # Redis(in-memory data structure store) 알아보기
 
